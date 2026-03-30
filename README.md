@@ -17,15 +17,15 @@ A high-performance Windows Service designed to monitor and automatically restart
    sc create ServerWatchGuard binPath= "C:\Path\To\WatchGuardService.exe" start= auto
    sc start ServerWatchGuard
 
-⚙️ Configuration (config.ini)
+##⚙️ Configuration (config.ini)
 
-[Settings]
-Count=1
+* **[Settings]**
+* Count=1
 
-[Process1]
-Name=valheim_server.exe
-Path=C:\Servers\Valheim\valheim_server.exe
-Dir=C:\Servers\Valheim\
+* **[Process1]
+* Name=valheim_server.exe
+* Path=C:\Servers\Valheim\valheim_server.exe
+* Dir=C:\Servers\Valheim\
 
-📜 History
-ServerWatchGuard is the official successor to the original [ServerChecker] project, evolving from a simple console tool into a robust system service.
+##📜 History
+* ServerWatchGuard is the official successor to the original [ServerChecker] project, evolving from a simple console tool into a robust system service.

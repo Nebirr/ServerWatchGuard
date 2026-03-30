@@ -17,7 +17,7 @@ A high-performance Windows Service designed to monitor and automatically restart
    sc create ServerWatchGuard binPath= "C:\Path\To\WatchGuardService.exe" start= auto
    sc start ServerWatchGuard
 
-##⚙️ Configuration (config.ini)
+## ⚙️ Configuration (config.ini)
 
 * **[Settings]**
 * Count=1

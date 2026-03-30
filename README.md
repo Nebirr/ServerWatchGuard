@@ -22,10 +22,10 @@ A high-performance Windows Service designed to monitor and automatically restart
 * **[Settings]**
 * Count=1
 
-* **[Process1]
+* **[Process1]**
 * Name=valheim_server.exe
 * Path=C:\Servers\Valheim\valheim_server.exe
 * Dir=C:\Servers\Valheim\
 
-##📜 History
+## 📜 History
 * ServerWatchGuard is the official successor to the original [ServerChecker] project, evolving from a simple console tool into a robust system service.

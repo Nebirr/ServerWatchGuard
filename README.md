@@ -10,7 +10,7 @@ A high-performance Windows Service designed to monitor and automatically restart
 * **Safety Threshold:** Limits restart attempts to 3 per cycle to prevent resource exhaustion in case of fatal path errors.
 
 ## 🚀 Installation & Setup
-1. Download the latest `WatchGuardService.exe` from the [Releases](INSERT_LINK_TO_RELEASES_LATER) section.
+1. Download the latest `WatchGuardService.exe` from the [Releases](https://github.com/Nebirr/ServerWatchGuard/releases) section.
 2. Create the folder `C:\WatchLogs\` and place a `config.ini` inside.
 3. Open CMD (Command Prompt) as **Administrator** and run:
    ```cmd

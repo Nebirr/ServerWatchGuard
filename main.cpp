@@ -204,7 +204,7 @@ void UpdateWebsiteStatus() {
         jsonFile << "{";
         for (size_t i = 0; i < g_WatchList.size(); ++i) {
             bool aktiv = IsProcessRunning(g_WatchList[i].name);
-            jsonFile << "\"" << wstringToUtf8(g_WatchList[i].name) << "\": \"" << (aktiv ? "Active" : "Offline") << "\"";
+            jsonFile << "\"" << wstringToUtf8(g_WatchList[i].displayName) << "\": \"" << (aktiv ? "Active" : "Offline") << "\"";
             if (i < g_WatchList.size() - 1) jsonFile << ", ";
         }
         jsonFile << "}";
@@ -240,11 +240,19 @@ void WINAPI ServiceMain(DWORD argc, LPTSTR* argv) {
     SendDiscordNotification(L"SYSTEM", false, L"WatchGuard Service started!");
 
     while (bRunning) {
+        if (g_WatchList.empty()) {
+            WriteToLog("WARNUNG: Keine Prozesse geladen. Warte auf korrekte config.ini...");
+            Sleep(10000);
+            LoadConfig();
+            continue;
+        }
+
         WIN32_FILE_ATTRIBUTE_DATA data;
         if (GetFileAttributesExW(L"C:\\WatchLogs\\config.ini", GetFileExInfoStandard, &data)) {
             if (CompareFileTime(&data.ftLastWriteTime, &g_lastWriteTime) != 0) {
                 g_lastWriteTime = data.ftLastWriteTime;
                 WriteToLog("Config change detected! Reloading...");
+                g_WatchList.clear();
                 LoadConfig();
             }
         }

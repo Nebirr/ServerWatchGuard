@@ -1,0 +1,34 @@
+; ServerWatchGuard - Example Configuration
+; Copy this file to C:\WatchLogs\config.ini and adjust the values.
+
+[Settings]
+; Total number of processes to monitor
+Count=1
+
+; Full path to save the status.json (e.g. for Nginx). Use NONE to disable.
+WebPath=C:\Path\To\Your\Webserver\status.json
+
+; Your Discord Webhook URL. Use NONE to disable notifications.
+WebhookURL=NONE
+
+[Process1]
+; Exact name of the executable (as seen in Task Manager)
+Name=server_process.exe
+
+; The name displayed in Discord messages and web status
+DisplayName=My Game Server
+
+; URL to a custom icon for Discord embeds. Use NONE for default lab logo.
+IconURL=NONE
+
+; Full path to the executable file
+Path=C:\Servers\MyGame\server_process.exe
+
+; Working directory (the folder where the exe is located)
+Dir=C:\Servers\MyGame\
+
+; Path to a log file for extracting dynamic values. Use NONE to disable.
+LogPath=NONE
+
+; Search string in the log file (the value after this string will be sent)
+LogSearch=NONE

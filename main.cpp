@@ -241,7 +241,7 @@ void WINAPI ServiceMain(DWORD argc, LPTSTR* argv) {
 
     while (bRunning) {
         if (g_WatchList.empty()) {
-            WriteToLog("WARNUNG: Keine Prozesse geladen. Warte auf korrekte config.ini...");
+            WriteToLog("WARNUNG: No Process loaded. Waiting for corecct config.ini...");
             Sleep(10000);
             LoadConfig();
             continue;

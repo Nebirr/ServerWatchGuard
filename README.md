@@ -47,7 +47,7 @@ LogSearch=Started session
 ```
 ---
 
-##🚀 Installation & Setup
+## 🚀 Installation & Setup
 - Download the latest ServerWatchGuard.exe.
 
 - Create the folder C:\WatchLogs\ and place your config.ini inside.
@@ -62,5 +62,8 @@ LogSearch=Started session
  ```sc delete ServerWatchGuard```
 - (Note: Ensure there is a space after binPath= and start=).
 
+---
 ## 📜 History
 ServerWatchGuard is the official successor to the ServerChecker project, evolving from a simple console tool into a professional-grade system service.
+
+---

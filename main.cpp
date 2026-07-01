@@ -182,7 +182,6 @@ void StartTargetProcess(std::wstring fullPath, std::wstring workingDir) {
     ZeroMemory(&si, sizeof(si));
     si.cb = sizeof(si);
     ZeroMemory(&pi, sizeof(pi));
-
     std::vector<wchar_t> pathBuf(fullPath.begin(), fullPath.end());
     pathBuf.push_back(L'\0');
 

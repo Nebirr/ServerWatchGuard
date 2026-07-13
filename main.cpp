@@ -1,17 +1,23 @@
 ﻿#include <Windows.h>
+#include <shellapi.h>
 #include <TlHelp32.h>
 #include <ctime>
 #include <fstream>
 #include <string>
 #include <vector>
 #include <cstdlib>
+#define WM_TRAYICON (WM_USER +1)
+NOTIFYICONDATA g_nid = { 0 };
 
 SERVICE_STATUS serviceStatus = { 0 };
 SERVICE_STATUS_HANDLE statusHandle = NULL;
 bool bRunning = true;
 FILETIME g_lastWriteTime = { 0 };
+std::wstring g_logFileName = L"ServerWatchGuard.log";
+std::wstring g_configFileName = L"config.ini";
 std::wstring g_webPath = L"NONE";
 std::wstring g_webhookURL = L"NONE";
+HWND  hConsole = NULL;
 
 struct WatchItem {
     std::wstring name;
@@ -35,7 +41,7 @@ std::string wstringToUtf8(const std::wstring& wstr) {
 }
 
 void WriteToLog(std::string message) {
-    std::ofstream logFile("C:\\WatchLogs\\ServerWatchGuard.log", std::ios::app);
+    std::ofstream logFile(L"C:\\WatchLogs\\" + g_logFileName, std::ios::app);
     if (logFile.is_open()) {
         std::time_t now = std::time(0);
         char timestamp[26];
@@ -45,6 +51,89 @@ void WriteToLog(std::string message) {
         logFile << "[" << timeStr << "] " << message << std::endl;
         logFile.close();
     }
+}
+
+LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam) {
+    switch (message) {
+    case WM_TRAYICON:
+        if (lParam == WM_RBUTTONUP) {
+            POINT pt;
+            GetCursorPos(&pt);
+
+            HMENU hMenu = CreatePopupMenu();
+            InsertMenu(hMenu, -1, MF_BYPOSITION | MF_STRING, 1001, L"Show/Hide Console");
+            InsertMenu(hMenu, -1, MF_BYPOSITION | MF_STRING, 1002, L"Open Log");
+            InsertMenu(hMenu, -1, MF_BYPOSITION | MF_STRING, 1003, L"Open Config");
+            InsertMenu(hMenu, -1, MF_SEPARATOR, 0, NULL);
+            InsertMenu(hMenu, -1, MF_BYPOSITION | MF_STRING, 1004, L"Quit");
+
+            SetForegroundWindow(hWnd);
+            TrackPopupMenu(hMenu, TPM_BOTTOMALIGN | TPM_LEFTALIGN, pt.x, pt.y, 0, hWnd, NULL);
+            DestroyMenu(hMenu);
+        }
+        else if (lParam == WM_MBUTTONDBLCLK) {
+
+        }
+        break;
+    case WM_COMMAND:
+        switch (LOWORD(wParam)) {
+        case 1001:
+            if (IsWindowVisible(hConsole) == TRUE) {
+                ShowWindow(hConsole, SW_HIDE);
+                break;
+            }
+            else {
+                ShowWindow(hConsole, SW_SHOW);
+                break;
+            }
+            break;
+        case 1002:
+            ShellExecute(NULL, L"open", g_logFileName.c_str(), NULL, NULL, SW_SHOWNORMAL);
+            break;
+        case 1003:
+            ShellExecute(NULL, L"open", g_configFileName.c_str(), NULL, NULL, SW_SHOWNORMAL);
+            break;
+        case 1004:
+            PostQuitMessage(0);
+            break;
+        default:
+            WriteToLog("Unbekannte Menü-ID!");
+            break;
+        }
+        break;
+    case WM_DESTROY:
+        Shell_NotifyIcon(NIM_DELETE, &g_nid);
+        PostQuitMessage(0);
+        break;
+    default:
+        return DefWindowProc(hWnd, message, wParam, lParam);
+    }
+    return 0;
+}
+
+HWND CreateHelperWindow() {
+    WNDCLASS wc = { 0 };
+    wc.lpfnWndProc = WndProc;
+    wc.hInstance = GetModuleHandle(NULL);
+    wc.lpszClassName = L"WatchGuardTrayClass";
+
+    RegisterClass(&wc);
+    return CreateWindowEx(0, L"WatchGuardTrayClass", L"WatchGuard Helper",
+        0, 0, 0, 0, 0, HWND_MESSAGE, NULL, wc.hInstance, NULL);
+}
+
+void MinimizeToTray(HWND hConsole, HWND hHelper) {
+    ShowWindow(hConsole, SW_HIDE);
+
+    g_nid.cbSize = sizeof(NOTIFYICONDATA);
+    g_nid.hWnd =  hHelper;
+    g_nid.uID = 1;
+    g_nid.uFlags = NIF_ICON | NIF_MESSAGE | NIF_TIP;
+    g_nid.uCallbackMessage = WM_TRAYICON;
+    g_nid.hIcon = LoadIcon(NULL, IDI_APPLICATION);
+    wcscpy_s(g_nid.szTip, L"WatchGuardService (Local)");
+
+    Shell_NotifyIcon(NIM_ADD, &g_nid);
 }
 
 std::wstring extrahiereLogWert(std::wstring logPath, std::wstring sucheW) {
@@ -118,7 +207,7 @@ bool IsProcessRunning(std::wstring processName) {
 
 void LoadConfig() {
     g_WatchList.clear();
-    std::wstring configFile = L"C:\\WatchLogs\\config.ini";
+    std::wstring configFile = L"C:\\WatchLogs\\" + g_configFileName;
 
     wchar_t wPath[MAX_PATH];
     GetPrivateProfileStringW(L"Settings", L"WebPath", L"NONE", wPath, MAX_PATH, configFile.c_str());
@@ -223,22 +312,19 @@ void WINAPI ServiceHandler(DWORD controlCode) {
     }
 }
 
-void WINAPI ServiceMain(DWORD argc, LPTSTR* argv) {
-    statusHandle = RegisterServiceCtrlHandler(L"ServerWatchGuard", ServiceHandler);
-    serviceStatus.dwServiceType = SERVICE_WIN32_OWN_PROCESS;
-    serviceStatus.dwCurrentState = SERVICE_START_PENDING;
-    serviceStatus.dwControlsAccepted = SERVICE_ACCEPT_STOP;
-    SetServiceStatus(statusHandle, &serviceStatus);
-
-    LoadConfig();
-
-    serviceStatus.dwCurrentState = SERVICE_RUNNING;
-    SetServiceStatus(statusHandle, &serviceStatus);
-    WriteToLog("Service is active.");
-
-    SendDiscordNotification(L"SYSTEM", false, L"WatchGuard Service started!");
-
+void RunWatchGuard() {
+    MSG msg;
     while (bRunning) {
+        if (PeekMessage(&msg, NULL, 0, 0, PM_REMOVE)) {
+            if (msg.message == WM_QUIT) {
+                bRunning = false;
+            }
+            else {
+                TranslateMessage(&msg);
+                DispatchMessage(&msg);
+            }
+        }
+
         if (g_WatchList.empty()) {
             WriteToLog("WARNUNG: No Process loaded. Waiting for corecct config.ini...");
             Sleep(10000);
@@ -281,17 +367,49 @@ void WINAPI ServiceMain(DWORD argc, LPTSTR* argv) {
                 item.restartAttempts = 0;
             }
         }
-        Sleep(10000);
+        Sleep(100);
     }
+}
+
+void WINAPI ServiceMain(DWORD argc, LPTSTR* argv) {
+    statusHandle = RegisterServiceCtrlHandler(L"ServerWatchGuard", ServiceHandler);
+    serviceStatus.dwServiceType = SERVICE_WIN32_OWN_PROCESS;
+    serviceStatus.dwCurrentState = SERVICE_START_PENDING;
+    serviceStatus.dwControlsAccepted = SERVICE_ACCEPT_STOP;
+    SetServiceStatus(statusHandle, &serviceStatus);
+
+    LoadConfig();
+  
+    serviceStatus.dwCurrentState = SERVICE_RUNNING;
+    SetServiceStatus(statusHandle, &serviceStatus);
+    WriteToLog("Service is active.");
+
+    SendDiscordNotification(L"SYSTEM", false, L"WatchGuard Service started!");
+
+    RunWatchGuard();
     serviceStatus.dwCurrentState = SERVICE_STOPPED;
     SetServiceStatus(statusHandle, &serviceStatus);
 }
 
-int main() {
-    SERVICE_TABLE_ENTRY serviceTable[] = {
+int wmain(int argc, wchar_t* argv[]) {
+    if ((argc > 1) && std::wstring(argv[1]) == L"-local") {
+        g_logFileName = L"WatchGuard_local.log";
+        g_configFileName = L"config_local.ini";
+        LoadConfig();
+
+        hConsole = GetConsoleWindow();
+        HWND hHelper = CreateHelperWindow();
+        MinimizeToTray(hConsole, hHelper);
+
+        RunWatchGuard();
+    }
+    else {
+        LoadConfig();
+        SERVICE_TABLE_ENTRY serviceTable[] = {
         {(LPWSTR)L"ServerWatchGuard", (LPSERVICE_MAIN_FUNCTION)ServiceMain},
         {NULL, NULL}
-    };
-    StartServiceCtrlDispatcher(serviceTable);
+        };
+        StartServiceCtrlDispatcher(serviceTable);
+    }
     return 0;
 }

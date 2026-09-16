@@ -1,5 +1,11 @@
 # 🛡️ ServerWatchGuard (v1.3)
 
+![C++](https://img.shields.io/badge/Language-C++-00599C?logo=c%2B%2B)
+![Windows](https://img.shields.io/badge/Platform-Windows-0078D4?logo=windows)
+![Release](https://img.shields.io/github/v/release/Nebirr/ServerWatchGuard)
+![Last Commit](https://img.shields.io/github/last-commit/Nebirr/ServerWatchGuard)
+![Issues](https://img.shields.io/github/issues/Nebirr/ServerWatchGuard)
+
 **ServerWatchGuard** is a robust Windows Service written in C++, designed to monitor, automatically restart, and report the status of server processes (e.g., Valheim, Arma 3, Nginx, Enshrouded) with high reliability and visual flair.
 
 ---

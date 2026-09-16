@@ -12,7 +12,7 @@
 - **PowerShell-Driven Discord Notifications:** Sends rich embeds via native PowerShell integration:
   - **Visual Alerts:** Supports Unicode emojis (⚠️, ✅) and custom colors.
   - **Modular Thumbnails:** Set unique Icon-URLs for every monitored process.
-  - **Dynamic Info:** Automatically extracts data (like Join Codes) from server logs.
+  - **Dynamic Info:** Automatically extracts data (like Join Codes in Games like Valheim) from server logs.
 - **Web-Status Integration:** Generates a real-time `status.json` for live monitoring on your Nginx/Web dashboard.
 - **Hot-Reload:** Automatically detects changes in the configuration file and updates settings without interruption.
 - **Fail-Safe Parsing:** Automatically trims leading/trailing spaces from configuration values.

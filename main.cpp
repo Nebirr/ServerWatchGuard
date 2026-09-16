@@ -8,13 +8,12 @@
 #include <cstdlib>
 #define WM_TRAYICON (WM_USER +1)
 NOTIFYICONDATA g_nid = { 0 };
-
 SERVICE_STATUS serviceStatus = { 0 };
 SERVICE_STATUS_HANDLE statusHandle = NULL;
 bool bRunning = true;
 FILETIME g_lastWriteTime = { 0 };
-std::wstring g_logFileName = L"ServerWatchGuard.log";
-std::wstring g_configFileName = L"config.ini";
+std::wstring g_logFileName;
+std::wstring g_configFileName;
 std::wstring g_webPath = L"NONE";
 std::wstring g_webhookURL = L"NONE";
 HWND  hConsole = NULL;
@@ -40,8 +39,43 @@ std::string wstringToUtf8(const std::wstring& wstr) {
     return strTo;
 }
 
+void CreateDefaultConfig() {
+
+    size_t textLength = 0;
+    wchar_t* textBuffer = nullptr;
+
+    _wdupenv_s(&textBuffer, &textLength, L"SystemDrive");
+
+    std::wstring systemDrive = L"C:";
+    if (textBuffer != nullptr) {
+        systemDrive = textBuffer;
+
+       std::free(textBuffer);
+    }
+
+    std::wstring logFolder = systemDrive + L"\\WatchLogs";
+
+    CreateDirectoryW(logFolder.c_str(), NULL);
+
+    std::ofstream ofs(g_configFileName);
+    ofs << "[Settings]\n";
+    ofs << "Count=1\n";
+    ofs << "WebPath=NONE\n";
+    ofs << "WebhookURL=NONE\n\n";
+
+    ofs << "[Process1]\n";
+    ofs << "Name=Example.exe\n";
+    ofs << "DisplayName=Example Process\n";
+    ofs << "IconURL=NONE\n";
+    ofs << "Path=C:\\Path\\To\\Your\\Example.exe\n";
+    ofs << "Dir=C:\\Path\\To\\Your\\\n";
+    ofs << "LogPath=NONE\n";
+    ofs << "LogSearch=NONE\n";
+    ofs.close();
+}
+
 void WriteToLog(std::string message) {
-    std::ofstream logFile(L"C:\\WatchLogs\\" + g_logFileName, std::ios::app);
+    std::ofstream logFile(g_logFileName, std::ios::app);
     if (logFile.is_open()) {
         std::time_t now = std::time(0);
         char timestamp[26];
@@ -207,7 +241,7 @@ bool IsProcessRunning(std::wstring processName) {
 
 void LoadConfig() {
     g_WatchList.clear();
-    std::wstring configFile = L"C:\\WatchLogs\\" + g_configFileName;
+    std::wstring configFile = g_configFileName;
 
     wchar_t wPath[MAX_PATH];
     GetPrivateProfileStringW(L"Settings", L"WebPath", L"NONE", wPath, MAX_PATH, configFile.c_str());
@@ -333,7 +367,7 @@ void RunWatchGuard() {
         }
 
         WIN32_FILE_ATTRIBUTE_DATA data;
-        if (GetFileAttributesExW(L"C:\\WatchLogs\\config.ini", GetFileExInfoStandard, &data)) {
+        if (GetFileAttributesExW(g_configFileName.c_str(), GetFileExInfoStandard, &data)) {
             if (CompareFileTime(&data.ftLastWriteTime, &g_lastWriteTime) != 0) {
                 g_lastWriteTime = data.ftLastWriteTime;
                 WriteToLog("Config change detected! Reloading...");
@@ -392,24 +426,106 @@ void WINAPI ServiceMain(DWORD argc, LPTSTR* argv) {
 }
 
 int wmain(int argc, wchar_t* argv[]) {
-    if ((argc > 1) && std::wstring(argv[1]) == L"-local") {
-        g_logFileName = L"WatchGuard_local.log";
-        g_configFileName = L"config_local.ini";
-        LoadConfig();
+    
+    HANDLE hMutex = CreateMutexW(NULL, TRUE, L"WatchGuard_Mutex_V1");
 
+    if (GetLastError() == ERROR_ALREADY_EXISTS) {
+        int restartChoice = MessageBoxW(NULL, L"Alert! WatchGuard is already running.\nDo you want to restart?", L"Alert", MB_YESNO | MB_ICONWARNING);
+
+        if (restartChoice == IDYES) {
+            HWND hOldApp = FindWindowW(L"WatchGuardTrayClass", NULL);
+            if (hOldApp) {
+                SendMessageW(hOldApp, WM_CLOSE, 0, 0);
+                Sleep(1000);
+            }
+        }
+        else {
+            return 0;
+        }
+    }
+    size_t textLength = 0;
+    wchar_t* textBuffer = nullptr;
+
+    _wdupenv_s(&textBuffer, &textLength, L"SystemDrive");
+
+    std::wstring systemDrive = L"C:";
+    if (textBuffer != nullptr) {
+        systemDrive = textBuffer;
+
+        std::free(textBuffer);
+    }
+
+    wchar_t pathBuffer[MAX_PATH];
+    GetModuleFileNameW(NULL, pathBuffer, MAX_PATH);
+    std::wstring currentPath = pathBuffer;
+
+    std::wstring targetFolder = systemDrive + L"\\WatchLogs";
+    std::wstring targetPath = targetFolder + L"\\WatchGuardService.exe";
+
+    if (currentPath != targetPath) {
+        CreateDirectoryW(targetFolder.c_str(), NULL); 
+
+        if (CopyFileW(currentPath.c_str(), targetPath.c_str(), FALSE)) {
+            int userChoice = MessageBoxW(NULL, L"WatchGuard has been installed sucssecfully...\nDo you want to install it in the Autostart Manager ?", L"Installation", MB_YESNO | MB_ICONINFORMATION);
+            
+            if (userChoice == IDYES) {
+                HKEY hKey;
+                if (RegOpenKeyExW(HKEY_CURRENT_USER, L"Software\\Microsoft\\Windows\\CurrentVersion\\Run", 0, KEY_SET_VALUE, &hKey) == ERROR_SUCCESS) {
+
+                    std::wstring autostartCommand = targetPath + L" -local";
+                    RegSetValueExW(hKey, L"ServerWatchGuard", 0, REG_SZ, (const BYTE*)autostartCommand.c_str(), (autostartCommand.length() + 1) * sizeof(wchar_t));
+
+                    RegCloseKey(hKey);
+                }
+            }
+
+            ShellExecuteW(NULL, L"open", targetPath.c_str(), L"-local", NULL, SW_SHOWNORMAL);
+
+            return 0;
+        }
+        else {
+            MessageBoxW(NULL, L"Error. Please Start with Administratore Rights.", L"Error", MB_OK | MB_ICONERROR);
+        }
+    }
+
+    g_logFileName = systemDrive + L"\\WatchLogs\\ServerWatchGuard.log";
+    g_configFileName = systemDrive + L"\\WatchLogs\\config.ini";
+
+    bool isLocal = ((argc > 1) && std::wstring(argv[1]) == L"-local");
+    if (isLocal) {
+        g_logFileName = systemDrive + L"\\WatchLogs\\WatchGuard_local.log";
+        g_configFileName = systemDrive + L"\\WatchLogs\\config_local.ini";
+    }
+
+    WIN32_FILE_ATTRIBUTE_DATA data;
+
+    if (!GetFileAttributesExW(g_configFileName.c_str(), GetFileExInfoStandard, &data)) {
+        CreateDefaultConfig();
+    }
+
+    if (isLocal) {
+        LoadConfig();
         hConsole = GetConsoleWindow();
         HWND hHelper = CreateHelperWindow();
         MinimizeToTray(hConsole, hHelper);
-
         RunWatchGuard();
-    }
-    else {
+    }else {
         LoadConfig();
         SERVICE_TABLE_ENTRY serviceTable[] = {
         {(LPWSTR)L"ServerWatchGuard", (LPSERVICE_MAIN_FUNCTION)ServiceMain},
         {NULL, NULL}
         };
-        StartServiceCtrlDispatcher(serviceTable);
+
+        if (StartServiceCtrlDispatcher(serviceTable) == FALSE) {
+
+            if (GetLastError() == ERROR_FAILED_SERVICE_CONTROLLER_CONNECT) {
+                LoadConfig();
+                hConsole = GetConsoleWindow();
+                HWND hHelper = CreateHelperWindow();
+                MinimizeToTray(hConsole, hHelper);
+                RunWatchGuard();
+            }
+        }
     }
     return 0;
 }

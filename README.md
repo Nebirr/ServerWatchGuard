@@ -1,4 +1,4 @@
-# 🛡️ ServerWatchGuard (v1.3)
+# 🛡️ ServerWatchGuard (v1.4)
 
 ![C++](https://img.shields.io/badge/Language-C++-00599C?logo=c%2B%2B)
 ![Windows](https://img.shields.io/badge/Platform-Windows-0078D4?logo=windows)
@@ -13,7 +13,7 @@
 ## ✨ Key Features
 - **Native Windows Service:** Runs silently in the background (Session 0). Starts automatically with Windows—no open console windows needed.
 - **Local Desktop Mode (Hybrid Execution):** Double-click the `.exe` to run the tool as a standard application in your active session. Includes a fully functional **System Tray Icon** with a right-click menu to toggle the console, open logs, edit configs, and quit the application safely.
-- **Smart Auto-Installation (Local Mode):** Automatically copies itself to `C:\WatchLogs`, sets up a Windows Autostart entry, and creates default configuration files on the first launch.
+- **Smart Auto-Installation (UAC Bypass):** Automatically copies itself to `C:\WatchLogs` and sets up an elevated Windows Task Scheduler entry. This ensures the app starts perfectly with Windows in Local Mode without triggering annoying Admin (UAC) prompts on every boot.
 - **Single-Instance Guard:** Prevents multiple instances from running simultaneously and provides an interactive UI prompt to safely restart existing background processes.
 - **PowerShell-Driven Discord Notifications:** Sends rich embeds via native PowerShell integration:
   - **Visual Alerts:** Supports Unicode emojis (⚠️, ✅) and custom colors.
@@ -57,44 +57,3 @@ Path=C:\Apps\MyServer\server_process.exe
 Dir=C:\Apps\MyServer\
 LogPath=C:\Apps\MyServer\logs\latest.log
 LogSearch=Started session
-```
----
-
-## 🚀 Installation & Setup
-
-**Option A: Run as a Windows Service (For True Servers)**
-
-*Manual setup is required to register the application as a Session 0 background service.*
-
-- Move the `WatchGuardService.exe`  to `C:\WatchLogs\.`
-
-- Edit your `config.ini` in the same directory.
-
-- Open `CMD` (Command Prompt) as Administrator and register the service:
-
-- `sc create ServerWatchGuard binPath= "C:\WatchLogs\WatchGuardService.exe" start= auto`
-
-*(Note: Ensure there is a space after binPath= and start=)*
-
-- Start the service: `sc start ServerWatchGuard`
-
-- Stop the service: `sc stop ServerWatchGuard`
-
-- Delete the service: `sc delete ServerWatchGuard`
-
-**Option B: Run in Local Mode (For Desktop & Testing)**
-
-*Automated setup via double-click (Hybrid Execution).*
-
-- Simply double-click the `WatchGuardService.exe` from anywhere (e.g., your Downloads folder).
-
-- The application will ask if you want to add it to your Windows Autostart.
-
-- It will automatically move itself to `C:\WatchLogs\`, generate the `config_local.ini`, and restart itself in Desktop Mode.
-
-- Look for the WatchGuard icon in your System Tray (bottom right of your screen). Right-click it to manage the tool, edit configs, or open logs!
----
-## 📜 History
-ServerWatchGuard is the official successor to the ServerChecker project, evolving from a simple console tool into a professional-grade system service.
-
----

@@ -466,17 +466,13 @@ int wmain(int argc, wchar_t* argv[]) {
         CreateDirectoryW(targetFolder.c_str(), NULL); 
 
         if (CopyFileW(currentPath.c_str(), targetPath.c_str(), FALSE)) {
-            int userChoice = MessageBoxW(NULL, L"WatchGuard has been installed sucssecfully...\nDo you want to install it in the Autostart Manager ?", L"Installation", MB_YESNO | MB_ICONINFORMATION);
+            int userChoice = MessageBoxW(NULL, L"WatchGuard has been installed sucssecfully...\nDo you want to install it in the Task Scheduler ?", L"Installation", MB_YESNO | MB_ICONINFORMATION);
             
             if (userChoice == IDYES) {
-                HKEY hKey;
-                if (RegOpenKeyExW(HKEY_CURRENT_USER, L"Software\\Microsoft\\Windows\\CurrentVersion\\Run", 0, KEY_SET_VALUE, &hKey) == ERROR_SUCCESS) {
+                std::wstring taskCommand = L"schtasks /create /tn \"ServerWatchGuard\" /sc onlogon /rl highest /f /tr \"";
+                taskCommand += targetPath + L" -local\"";
 
-                    std::wstring autostartCommand = targetPath + L" -local";
-                    RegSetValueExW(hKey, L"ServerWatchGuard", 0, REG_SZ, (const BYTE*)autostartCommand.c_str(), (autostartCommand.length() + 1) * sizeof(wchar_t));
-
-                    RegCloseKey(hKey);
-                }
+                _wsystem(taskCommand.c_str());
             }
 
             ShellExecuteW(NULL, L"open", targetPath.c_str(), L"-local", NULL, SW_SHOWNORMAL);

@@ -47,13 +47,54 @@ The service is fully modular. You can toggle features like Discord notifications
 [Settings]
 Count=1
 WebPath=C:\Path\To\Your\Webserver\status.json
-WebhookURL=[https://discord.com/api/webhooks/YOUR_WEBHOOK_ID/YOUR_TOKEN](https://discord.com/api/webhooks/YOUR_WEBHOOK_ID/YOUR_TOKEN)
+WebhookURL=https://discord.com/api/webhooks/YOUR_WEBHOOK_ID/YOUR_TOKEN
 
 [Process1]
 Name=server_process.exe
 DisplayName=My Game Server
-IconURL=[https://your-domain.com/icons/server-icon.png](https://your-domain.com/icons/server-icon.png)
+IconURL=https://your-domain.com/icons/server-icon.png
 Path=C:\Apps\MyServer\server_process.exe
 Dir=C:\Apps\MyServer\
 LogPath=C:\Apps\MyServer\logs\latest.log
 LogSearch=Started session
+```
+---
+
+## 🚀 Installation & Setup
+
+### Option A: Run as a Windows Service (For True Servers)
+*Manual setup is required to register the application as a Session 0 background service.*
+
+1. Move the `WatchGuardService.exe` to `C:\WatchLogs\`.
+2. Edit your `config.ini` in the same directory.
+3. Open **CMD** (Command Prompt) as Administrator and register the service:
+   ```cmd
+   sc create ServerWatchGuard binPath= "C:\WatchLogs\WatchGuardService.exe" start= auto
+   ```
+   *(Note: Ensure there is a space after `binPath=` and `start=`)*
+4. Start the service: 
+   ```cmd
+   sc start ServerWatchGuard
+   ```
+5. Stop the service: 
+   ```cmd
+   sc stop ServerWatchGuard
+   ```
+6. Delete the service: 
+   ```cmd
+   sc delete ServerWatchGuard
+   ```
+
+### Option B: Run in Local Mode (For Desktop & Testing)
+*Automated setup via double-click (Hybrid Execution).*
+
+1. Simply double-click the `WatchGuardService.exe` from anywhere (e.g., your Downloads folder). 
+2. Windows will ask for Administrator privileges (required to create the automated background task).
+3. The application will ask if you want to add it to your Windows Autostart.
+4. It will automatically move itself to `C:\WatchLogs\`, generate the `config_local.ini`, register the silent Autostart task, and restart itself in Desktop Mode.
+5. Look for the WatchGuard icon in your System Tray (bottom right of your screen). Right-click it to manage the tool, edit configs, or open logs!
+
+---
+
+## 📜 History
+ServerWatchGuard is the official successor to the ServerChecker project, evolving from a simple console tool into a professional-grade system service.
